@@ -11,7 +11,6 @@ from onadata.libs.data import parse_int
 from onadata.libs.renderers.renderers import pairing
 from onadata.apps.logger.models import Instance
 from onadata.apps.logger.models.xform import XForm
-from onadata.apps.viewer.models.data_dictionary import DataDictionary
 from onadata.apps.api.viewsets.open_data_viewset import (
     OpenDataViewSet)
 from onadata.libs.serializers.data_serializer import TableauDataSerializer
@@ -20,7 +19,7 @@ from onadata.libs.utils.common_tags import (
 
 
 DEFAULT_TABLE_NAME = 'data'
-gps_parts = ['altitude', 'precision', 'longitude', 'latitude']
+GPS_PARTS = ['latitude', 'longitude', 'altitude', 'precision']
 
 
 def process_tableau_data(
@@ -91,21 +90,12 @@ def process_tableau_data(
                                 flat_dict[qstn_name] = "FALSE"
                     elif qstn_type == 'geopoint':
                         value_parts = value.split(' ')
-                        gps_xpaths = \
-                            DataDictionary.get_additional_geopoint_xpaths(
-                                key)
-                        # Clean gps xpaths before assigning values
-                        repeat_names = [
-                            question['name'] for question in qstn.get_lineage()
-                            if question['type'] == 'repeat'
-                        ]
                         gps_xpath_parts = []
-                        for xpath in gps_xpaths:
-                            xpath = xpath.replace("/", "_")
-                            for repeat in repeat_names:
-                                xpath = xpath.replace(f"_{repeat}", "")
-                            gps_xpath_parts.append((xpath, None))
-
+                        for part in GPS_PARTS:
+                            name = f"_{qstn_name}_{part}"
+                            if prefix:
+                                name = prefix + '_' + name
+                            gps_xpath_parts.append((name, None))
                         if len(value_parts) == 4:
                             gps_parts = dict(
                                 zip(dict(gps_xpath_parts), value_parts))
@@ -214,9 +204,12 @@ class TableauViewSet(OpenDataViewSet):
                         }
                     )
             elif field_type == 'geopoint':
-                for part in gps_parts:
+                for part in GPS_PARTS:
+                    name = f'_{field["name"]}_{part}'
+                    if prefix:
+                        name = prefix + name
                     ret[table_name].append({
-                        'name': f'{prefix}_{field["name"]}_{part}',
+                        'name': name,
                         'type': self.get_tableau_type(field.get('type'))
                     })
             else:
