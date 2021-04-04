@@ -20,7 +20,7 @@ RUN ssh-keyscan github.com > /root/.ssh/known_hosts
 # hadolint ignore=DL3013
 RUN if [ -n "$optional_packages" ]; then pip install ${optional_packages} ; fi
 
-FROM ubuntu:20.04
+FROM ubuntu:20.10
 COPY --from=intermediate /usr/local/lib/python3.6/site-packages/ /usr/local/lib/python3.6/dist-packages/
 
 ARG release_version=v2.4.1
